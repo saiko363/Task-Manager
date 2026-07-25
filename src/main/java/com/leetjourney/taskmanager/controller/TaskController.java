@@ -1,8 +1,12 @@
 package com.leetjourney.taskmanager.controller;
 
 
+import com.leetjourney.taskmanager.dto.TaskRequest;
+import com.leetjourney.taskmanager.dto.TaskResponse;
 import com.leetjourney.taskmanager.entity.Task;
 import com.leetjourney.taskmanager.repository.TaskRepository;
+import com.leetjourney.taskmanager.service.TaskService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,55 +20,60 @@ import java.util.List;
 public class TaskController {
 
 
-    private final TaskRepository taskRepository;
+    private final TaskService taskService;
 
-    public TaskController(TaskRepository taskRepository){
-        this.taskRepository=taskRepository;
+    public TaskController(TaskService taskService){
+        this.taskService=taskService;
     }
 
     @GetMapping
-    public List<Task> getAllTasks(){
-        return taskRepository.findAll();
+    public List<TaskResponse> getAllTasks(){
+        return taskService.getAllTasks();
     }
     @GetMapping("/{id}")
-    public ResponseEntity<Task> getTaskById(@PathVariable Long id)
+    public TaskResponse getTaskById(@PathVariable Long id)
     {
-        return taskRepository.findById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        return taskService.getTaskById(id);
     }
 
     @PostMapping
-    public ResponseEntity<Task> createTask(@RequestBody Task task){
-       Task savedTask = taskRepository.save(task);
+    public ResponseEntity<TaskResponse> createTask(@Valid @RequestBody TaskRequest task){
+       TaskResponse savedTask = taskService.createTask(task);
        return ResponseEntity.status(HttpStatus.CREATED).body(savedTask);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Task> updateTask(@PathVariable Long id,@RequestBody Task taskToUpdate)
+    public TaskResponse updateTask(@PathVariable Long id,@Valid @RequestBody TaskRequest taskToUpdate)
     {
-        return taskRepository.findById(id)
-                .map(task -> {
-                    task.setTitle(taskToUpdate.getTitle());
-                    task.setDescription(taskToUpdate.getDescription());
-                    Task savedTask = taskRepository.save(task);
-                    return ResponseEntity.ok(savedTask);
-                })
-                .orElse(ResponseEntity.notFound().build());
+        return taskService.updateTask(id, taskToUpdate);
 
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTask(@PathVariable Long id)
     {
-        return taskRepository.findById(id)
-                .map(task -> {
-                    taskRepository.delete(task);
-                    return ResponseEntity.ok().<Void>build();
-                })
-                .orElse(ResponseEntity.notFound().build());
-
+        taskService.deleteTask(id);
+        return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/completed/{status}")
+    public List<Task> getTasksByCompletionStatus(@PathVariable boolean status)
+    {
+        return taskService.getCompletedTasksByStatus(status);
+    }
+
+    @GetMapping("/search")
+    public List<Task> searchTasksByTitle(@RequestParam String title)
+    {
+        return taskService.searchTaskByTitle(title);
+    }
+
+    @GetMapping("/completed/status")
+    public List<Task> findTasksWithStatus(@RequestParam boolean status)
+    {
+        return taskService.findTasksByStatus(status);
+    }
+
 
 
 }
