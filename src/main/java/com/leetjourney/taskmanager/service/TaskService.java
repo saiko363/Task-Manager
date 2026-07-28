@@ -8,6 +8,8 @@ import com.leetjourney.taskmanager.exception.TaskNotFoundException;
 import com.leetjourney.taskmanager.mapper.TaskMapper;
 import com.leetjourney.taskmanager.repository.TaskRepository;
 import jakarta.transaction.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -36,6 +38,13 @@ public class TaskService {
         }
         return taskResponses;
     }
+
+    public Page<Task> getAllTasks(Pageable pageable)
+    {
+        return taskRepository.findAll(pageable);
+    }
+
+
    //Get Tasks by ID
     public TaskResponse getTaskById(Long id)
     {
@@ -72,9 +81,18 @@ public class TaskService {
 
     }
 
-    public List<Task> getCompletedTasksByStatus(boolean status)
+    public List<TaskResponse> getCompletedTasksByStatus(boolean status)
     {
-        return taskRepository.findByCompleted(status);
+        final List<Task> completedTasks = taskRepository.findByCompleted(status);
+        return completedTasks.stream()
+                .map(taskMapper:: toResponse)
+                .toList();
+    }
+
+    public Page<TaskResponse> getCompletedTasksByStatus(boolean status, Pageable pageable)
+    {
+        final Page<Task> completedTasks = taskRepository.findByCompleted(status, pageable);
+        return completedTasks.map(taskMapper:: toResponse);
     }
     public List<Task> searchTaskByTitle(String title)
     {
@@ -84,5 +102,18 @@ public class TaskService {
     public List<Task> findTasksByStatus(boolean status)
     {
         return taskRepository.findTasksByCompletionStatus(status);
+    }
+
+    public Page<Task> searchTasksByTitle(String title, Pageable pageable)
+    {
+        return taskRepository.findByTitleContainingIgnoreCase(title, pageable);
+    }
+
+    public Page<Task> findTasksByTitleAndCompletion(String title, Boolean completed, Pageable pageable) {
+        return taskRepository.findByTitleContainingAndCompleted(title,completed, pageable);
+    }
+
+    public Page<Task> getTasksByCompletion(Boolean completed, Pageable pageable) {
+        return taskRepository.findTasksByCompletionStatus(completed,pageable);
     }
 }
